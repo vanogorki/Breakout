@@ -4,17 +4,18 @@ using UnityEngine;
 
 public class Brick : MonoBehaviour
 {
-    [SerializeField	] private Sprite _damagedSprite;
+    [SerializeField] private Sprite _damagedSprite;
     
-    // Start is called before the first frame update
-    void Start()
+    private void OnCollisionEnter2D(Collision2D other)
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        if (GetComponent<SpriteRenderer>().sprite == _damagedSprite && other.gameObject.CompareTag("Ball"))
+        {
+            Destroy(gameObject);
+            return;
+        }
+        if (other.gameObject.CompareTag("Ball"))
+        {
+            GetComponent<SpriteRenderer>().sprite = _damagedSprite;
+        }
     }
 }
