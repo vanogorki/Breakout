@@ -5,8 +5,13 @@ using UnityEngine.TestTools;
 
 public class MoveTest
 {
-    // A UnityTest behaves like a coroutine in Play Mode. In Edit Mode you can use
-    // `yield return null;` to skip a frame.
+    [SetUp]
+    public void Setup()
+    {
+        var camera = GameObject.Instantiate(new GameObject().AddComponent<Camera>());
+        camera.tag = "MainCamera";
+    }
+    
     [UnityTest]
     public IEnumerator BallMoves()
     {
@@ -16,7 +21,7 @@ public class MoveTest
         ball.AddComponent<Ball>();
 
         // Act
-        // ball should move up at the start of the game
+        // ball should move up as soon as it's created
         yield return new WaitForFixedUpdate();
 
         // Assert

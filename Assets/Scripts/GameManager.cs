@@ -1,38 +1,36 @@
 using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.Versioning;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEngine.Serialization;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] private GameObject _paddle;
-    [SerializeField] private GameObject _ball;
-    [SerializeField] private GameObject _brick;
+    public static GameManager Instance { get; private set; }
+    
     [SerializeField] private GameObject _gameOverScreen;
     [SerializeField] private GameObject _healthBar;
     
     private int _health = 3;
-    private Camera _camera;
-    private bool _isOffScreen;
-    private bool _isSpawning;
+    private bool _isLevelComplete;
+    private bool _isOneBallLeft;
 
     // Start is called before the first frame update
     void Awake()
     {
-        Application.targetFrameRate = 60;
-        _camera = Camera.main;
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
+        
         // spawn paddle
-        Instantiate(_paddle, new Vector3(0, -4f, 0), Quaternion.identity);
+        SpawnManager.Instance.SpawnPaddle();
         // spawn ball
-        StartCoroutine(SpawnBall());
+        StartCoroutine(SpawnBallAfterTime());
         // spawn bricks
         for (float i = 0; i < 5f; i += 0.5f)
         {
             for (float j = 0; j < 16.5f; j += 1.5f)
             {
-                Instantiate(_brick, new Vector3(j - 7.5f, 4f - i, 0), Quaternion.identity);
+                SpawnManager.Instance.SpawnRandomBrick(new Vector3(j - 7.5f, 4f - i, 0));
             }
         }
     }
@@ -40,38 +38,55 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        var ballPosition = _camera.WorldToScreenPoint(_ball.transform.position);
-        _isOffScreen = ballPosition.y < 0;
-        
-        if (_isOffScreen && _health > 0 && !_isSpawning)
+        if (GameObject.FindGameObjectsWithTag("Brick").Length == 0 && !_isLevelComplete)
         {
-            Debug.Log("Ball is off screen!");
-            _health--;
-            _healthBar.GetComponent<IconHandler>().UpdateIcons(_health);
-            
-            if (_health == 0)
-                GameOver();
-            else
-                StartCoroutine(SpawnBall());
+            StartCoroutine(LevelComplete());
+            return;
         }
+
+        if (GameObject.FindGameObjectsWithTag("Ball").Length == 1)
+            _isOneBallLeft = true;
+        else
+            _isOneBallLeft = false;
+    }
+    
+    private IEnumerator SpawnBallAfterTime()
+    {
+        yield return new WaitForSeconds(1);
+        float randomX = Random.Range(-7.5f, 7.5f);
+        SpawnManager.Instance.SpawnBall(new Vector3(randomX, -3.9f, 0));
     }
 
-    private IEnumerator SpawnBall()
+    private IEnumerator LevelComplete()
     {
-        _isSpawning = true;
-        float randomX = Random.Range(-7.5f, 7.5f);
-        yield return new WaitForSeconds(1);
-        _ball = Instantiate(_ball, new Vector3(randomX, -3.9f, 0), Quaternion.identity);
-        _isSpawning = false;
+        _isLevelComplete = true;
+        SoundManager.Instance.PlayLevelComplete();
+        yield return new WaitForSeconds(3);
+        RestartGame();
     }
     
     private void GameOver()
     {
+        SoundManager.Instance.PlayGameOver();
         _gameOverScreen.SetActive(true);
     }
     
     public void RestartGame()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+    
+    public void BallOffScreen()
+    {
+        if (_health > 0 && !_isLevelComplete && _isOneBallLeft)
+        {
+            _health--;
+            _healthBar.GetComponent<IconHandler>().UpdateIcons(_health);
+            
+            if (_health == 0)
+                GameOver();
+            else
+                StartCoroutine(SpawnBallAfterTime());
+        }
     }
 }

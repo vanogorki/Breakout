@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,9 +13,10 @@ public class Paddle : MonoBehaviour
     void Start()
     {
         _playerInput = GetComponent<PlayerInput>();
+        _paddleHalfWidth = GetComponent<Collider2D>().bounds.size.x / 2;
+        
         _inputAction = _playerInput.actions["MousePosition"];
         _camera = Camera.main;
-        _paddleHalfWidth = GetComponent<Collider2D>().bounds.size.x / 2;
         _cameraHalfWidth = _camera.orthographicSize * _camera.aspect;
     }
 
@@ -43,6 +41,8 @@ public class Paddle : MonoBehaviour
             Vector2 direction = hitPoint - paddleCenter;
             var speed = other.gameObject.GetComponent<Rigidbody2D>().velocity.magnitude;
             other.gameObject.GetComponent<Rigidbody2D>().velocity = direction.normalized * speed;
+            
+            SoundManager.Instance.PlayPaddleHit();
         }
     }
 }
